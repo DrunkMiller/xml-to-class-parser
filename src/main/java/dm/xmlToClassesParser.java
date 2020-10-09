@@ -33,18 +33,6 @@ public class xmlToClassesParser {
         this.workbook = openWorkbook(excelFilePath);
     }
 
-    public void setFieldNameScopeSize(int fieldNameScopeSize) {
-        this.fieldNameScopeSize = fieldNameScopeSize;
-    }
-
-    public void setColumnHeaderTemplateWithFieldType(String columnHeaderTemplateWithFieldType) {
-        this.columnHeaderTemplateWithFieldType = columnHeaderTemplateWithFieldType;
-    }
-
-    public void setValidVariableNameRegexPattern(String validVariableNameRegexPattern) {
-        this.validVariableNameRegexPattern = Pattern.compile(validVariableNameRegexPattern);
-    }
-
     public void parse(String targetSheet) {
         try {
             Sheet sheet = workbook.getSheet(targetSheet);
@@ -107,7 +95,7 @@ public class xmlToClassesParser {
         }
         classCreator.create(classType, fields);
         createdClasses.add(classType);
-        System.out.println("Class '" + classType + "' was created");
+        System.out.println("Class '" + classType + "' created");
     }
 
     private Sheet getCellHyperlink(Cell cell) {
