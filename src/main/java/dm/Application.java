@@ -10,9 +10,53 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class Application {
     public static void main(String[] args) {
+        CommandLine line = getConsoleArgs(args);
+        Map<String, String> replacementDict = new HashMap<>();
+        String jsonInputReplacementDictionary = "";
+        if (line.hasOption("d")) {
+            try {
+                jsonInputReplacementDictionary = line.getOptionValue("d");
+                Gson gson = new Gson();
+                String json = new String(Files.readAllBytes(Paths.get(jsonInputReplacementDictionary)));
+                replacementDict = gson.fromJson(json, new TypeToken<HashMap<String, String>>() {}.getType());
+            }
+            catch (IOException exception) {
+                System.err.println("Dictionary file '" + jsonInputReplacementDictionary + "' was not read : " + exception.getMessage());
+                exception.printStackTrace(System.err);
+            }
+        }
+
+        String exelFile = line.getOptionValue("in");
+        String outDir = line.getOptionValue("out");
+        String nameSheet = line.getOptionValue("s");
+        int fieldNameScopeSize = 9;
+        String columnHeaderTemplateWithFieldType = "Тип";
+        String validVariableNamePattern = "^[a-zA-Z][a-zA-Z0-9_&]*";
+        if (line.hasOption("size")) {
+            fieldNameScopeSize = Integer.parseInt(line.getOptionValue("size"));
+        }
+        if (line.hasOption("tcolname")) {
+            columnHeaderTemplateWithFieldType = line.getOptionValue("tcolname");
+        }
+        if (line.hasOption("reg")) {
+            validVariableNamePattern = line.getOptionValue("reg");
+        }
+
+        xmlToClassesParser parser = new xmlToClassesParser(
+                exelFile,
+                new ClassCreatorWithPublicFields(outDir),
+                replacementDict,
+                fieldNameScopeSize,
+                columnHeaderTemplateWithFieldType,
+                validVariableNamePattern);
+        parser.parse(nameSheet);
+    }
+
+    static CommandLine getConsoleArgs(String[] args) {
         final Options options = new Options();
         options.addOption(
                 Option.builder("in")
@@ -72,48 +116,13 @@ public class Application {
                         .build()
         );
         CommandLineParser commandLineParser = new DefaultParser();
-        CommandLine line = null;
         try {
-            line = commandLineParser.parse(options, args);
+            return commandLineParser.parse(options, args);
         }
         catch (ParseException exception) {
             HelpFormatter formatter = new HelpFormatter();
             formatter.printHelp( "", options);
+            return null;
         }
-
-        Map<String, String> replacementDict = new HashMap<>();
-        String jsonInputReplacementDictionary = "";
-        if (line.hasOption("d")) {
-            try {
-                jsonInputReplacementDictionary = line.getOptionValue("d");
-                Gson gson = new Gson();
-                String json = new String(Files.readAllBytes(Paths.get(jsonInputReplacementDictionary)));
-                replacementDict = gson.fromJson(json, new TypeToken<HashMap<String, String>>() {}.getType());
-            }
-            catch (IOException exception) {
-                System.err.println("Dictionary file '" + jsonInputReplacementDictionary + "' was not read : " + exception.getMessage());
-                exception.printStackTrace(System.err);
-            }
-        }
-
-        String exelFile = line.getOptionValue("in");
-        String outDir = line.getOptionValue("out");
-        String nameSheet = line.getOptionValue("s");
-        xmlToClassesParser parser = new xmlToClassesParser(
-                exelFile,
-                new ClassCreatorWithPublicFields(outDir),
-                replacementDict);
-
-        if (line.hasOption("size")) {
-            parser.setFieldNameScopeSize(Integer.parseInt(line.getOptionValue("size")));
-        }
-        if (line.hasOption("tcolname")) {
-            parser.setColumnHeaderTemplateWithFieldType(line.getOptionValue("tcolname"));
-        }
-        if (line.hasOption("reg")) {
-            parser.setValidVariableNameRegexPattern(line.getOptionValue("reg"));
-        }
-
-        parser.parse(nameSheet);
     }
 }

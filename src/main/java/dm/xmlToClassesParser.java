@@ -20,9 +20,12 @@ public class xmlToClassesParser {
 
     public xmlToClassesParser(String excelFilePath,
                               ClassCreator classCreator,
-                              Map<String, String> typeReplacementDictionary) {
-        this.fieldNameScopeSize = 9;
-        this.columnHeaderTemplateWithFieldType = "Тип";
+                              Map<String, String> typeReplacementDictionary,
+                              int fieldNameScopeSize,
+                              String columnHeaderTemplateWithFieldType,
+                              String validVariableNamePattern) {
+        this.fieldNameScopeSize = fieldNameScopeSize;
+        this.columnHeaderTemplateWithFieldType = columnHeaderTemplateWithFieldType;
         this.validVariableNameRegexPattern = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_&]*");
         this.classCreator = classCreator;
         this.typeReplacementDictionary = typeReplacementDictionary;
