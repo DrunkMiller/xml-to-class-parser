@@ -45,47 +45,35 @@ public class xmlToClassesParser {
 
     private void parseSheet(Sheet sheet) {
         int columnNumberOfFieldType = findNumbreOfTypeColumn(sheet);
-        if (columnNumberOfFieldType < 0) {
-            throw new RuntimeException(" column with type not found" );
-        }
         Deque<LinkedList<FieldInfo>> nestingQueue = new LinkedList<>();
-        LinkedList<FieldInfo> fieldsOfCurrentParsedClass = new LinkedList<>();
-        int currentNestingLevel = 0;
-        Iterator<Row> rowIterator = sheet.rowIterator();
-        while (rowIterator.hasNext()) {
-            Row currentRow = rowIterator.next();
-            Iterator<Cell> cellIterator = currentRow.cellIterator();
-            while (cellIterator.hasNext()) {
-                Cell currentCell = cellIterator.next();
-                if (currentCell.getColumnIndex() > fieldNameScopeSize) {
+        nestingQueue.add(new LinkedList<>());
+        int currentNestingLevel = -1;
+        for (Row currentRow : sheet){
+            for (Cell nameCell : currentRow) {
+                if (nameCell.getColumnIndex() > fieldNameScopeSize) {
                     break;
                 }
-                if (!isValidCell(currentCell)) {
-                    continue;
-                }
-                if (currentCell.getColumnIndex() > currentNestingLevel && !fieldsOfCurrentParsedClass.isEmpty()) {
-                    nestingQueue.add(fieldsOfCurrentParsedClass);
-                    fieldsOfCurrentParsedClass = new LinkedList<>();
-                }
-                if (currentCell.getColumnIndex() < currentNestingLevel) {
-                    createClass(nestingQueue.getLast().getLast().getType(), fieldsOfCurrentParsedClass);
-                    for (int j = 0; j < currentNestingLevel - currentCell.getColumnIndex() - 1; j++) {
-                        createClass(nestingQueue.getLast().getLast().getType(), nestingQueue.pollLast());
+                if (isValidCell(nameCell)) {
+                    if (nameCell.getColumnIndex() > currentNestingLevel && currentNestingLevel > 0) {
+                        nestingQueue.add(new LinkedList<>());
                     }
-                    fieldsOfCurrentParsedClass = nestingQueue.pollLast();
+                    if (nameCell.getColumnIndex() < currentNestingLevel) {
+                        popAndCreateClasses(nestingQueue, currentNestingLevel - nameCell.getColumnIndex());
+                    }
+                    currentNestingLevel = nameCell.getColumnIndex();
+                    nestingQueue.getLast().add(createField(nameCell, currentRow.getCell(columnNumberOfFieldType)));
+                    parseCellHyperlink(currentRow.getCell(columnNumberOfFieldType));
+                    break;
                 }
-                currentNestingLevel = currentCell.getColumnIndex();
-                fieldsOfCurrentParsedClass.add(createField(currentCell, currentRow.getCell(columnNumberOfFieldType)));
-                Sheet hyperlinkOnSheet = getCellHyperlink(currentRow.getCell(columnNumberOfFieldType));
-                if (hyperlinkOnSheet != null) {
-                    parseSheet(hyperlinkOnSheet);
-                }
-                break;
             }
         }
-        while (!nestingQueue.isEmpty()) {
-            createClass(nestingQueue.getLast().getLast().getType(), fieldsOfCurrentParsedClass);
-            fieldsOfCurrentParsedClass = nestingQueue.pollLast();
+        popAndCreateClasses(nestingQueue, nestingQueue.size() - 1);
+    }
+
+    private void popAndCreateClasses(Deque<LinkedList<FieldInfo>> queue, int count) {
+        for (int j = 0; j < count ; j++) {
+            LinkedList<FieldInfo> classFields = queue.pollLast();
+            createClass(queue.getLast().getLast().getType(), classFields);
         }
     }
 
@@ -98,16 +86,19 @@ public class xmlToClassesParser {
         System.out.println("Class '" + classType + "' created");
     }
 
-    private Sheet getCellHyperlink(Cell cell) {
+    private void parseCellHyperlink(Cell cell) {
         if (cell == null) {
-            return null;
+            return;
         }
         Hyperlink hyperlink = cell.getHyperlink();
         if (hyperlink == null) {
-            return null;
+            return;
         }
         String targetSheetName = cell.getHyperlink().getAddress().split("!")[0];
-        return workbook.getSheet(targetSheetName);
+        Sheet sheet = workbook.getSheet(targetSheetName);
+        if (sheet != null) {
+            parseSheet(sheet);
+        }
     }
 
     private Workbook openWorkbook(String path) {
@@ -139,7 +130,7 @@ public class xmlToClassesParser {
                 }
             }
         }
-        return -1;
+        throw new RuntimeException(" column with type not found" );
     }
 
     private FieldInfo createField(Cell name, Cell type) {
