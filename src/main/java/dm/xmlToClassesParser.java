@@ -235,10 +235,10 @@ public class xmlToClassesParser {
         }
 
         Map<String, String> replacementDict = new HashMap<>();
-        String jsonInputReplacementDictionary = "type_replacement_dictionary.js";
-        if (line.hasOption("rd")) {
+        String jsonInputReplacementDictionary = "";
+        if (line.hasOption("d")) {
             try {
-                jsonInputReplacementDictionary = line.getOptionValue("rd");
+                jsonInputReplacementDictionary = line.getOptionValue("d");
                 Gson gson = new Gson();
                 String json = new String(Files.readAllBytes(Paths.get(jsonInputReplacementDictionary)));
                 replacementDict = gson.fromJson(json, new TypeToken<HashMap<String, String>>() {}.getType());
