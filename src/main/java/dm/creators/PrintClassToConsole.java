@@ -1,4 +1,6 @@
-package dm;
+package dm.creators;
+
+import dm.FieldInfo;
 
 import java.util.Collection;
 

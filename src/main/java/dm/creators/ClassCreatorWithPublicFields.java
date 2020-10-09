@@ -1,4 +1,6 @@
-package dm;
+package dm.creators;
+import dm.FieldInfo;
+
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
