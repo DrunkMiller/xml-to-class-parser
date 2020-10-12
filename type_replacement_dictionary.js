@@ -1,4 +1,5 @@
 {
+"" : "Object",
 "строка" : "String",
 "Cтрока" : "String",
 "дата-время" : "LocalDateTime",
@@ -9,6 +10,17 @@
 "Дата" : "LocalDate",
 "булевское" : "boolean",
 "Булевcкое" : "boolean",
+"Булево" : "boolean", 
+"булево" : "boolean", 
 "число" : "int",
-"Чиcло" : "int"
+"Чиcло" : "int",
+"Целое" : "int",
+"целое" : "int",
+"Дробное" : "double",
+"дробное" : "double",
+"UUID" : "String",
+"RetailOnlineComment" : "String",
+"TDocumentNumber" : "int",
+"AssdOblRebate" : "Object",
+"PrivateSmeApplication" : "PrivateSMEApplication"
 }
