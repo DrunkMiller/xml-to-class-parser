@@ -14,34 +14,20 @@ import java.util.Map;
 public class Application {
     public static void main(String[] args) {
         CommandLine line = getConsoleArgs(args);
-        Map<String, String> replacementDict = new HashMap<>();
-        String jsonInputReplacementDictionary = "";
-        if (line.hasOption("rd")) {
-            try {
-                jsonInputReplacementDictionary = line.getOptionValue("rd");
-                Gson gson = new Gson();
-                String json = new String(Files.readAllBytes(Paths.get(jsonInputReplacementDictionary)));
-                replacementDict = gson.fromJson(json, new TypeToken<HashMap<String, String>>() {}.getType());
-            }
-            catch (IOException exception) {
-                System.err.println("Dictionary file '" + jsonInputReplacementDictionary + "' was not read : " + exception.getMessage());
-                exception.printStackTrace(System.err);
-            }
+
+        Map<String, String> replacementNameDict = new HashMap<>();
+        if (line.hasOption("nd")) {
+            replacementNameDict = loadDictionary(line.getOptionValue("nd"));
+        }
+
+        Map<String, String> replacementTypeDict = new HashMap<>();
+        if (line.hasOption("td")) {
+            replacementTypeDict = loadDictionary(line.getOptionValue("td"));
         }
 
         Map<String, String> importsDict = new HashMap<>();
-        String jsonInputImportsDict = "";
         if (line.hasOption("id")) {
-            try {
-                jsonInputImportsDict = line.getOptionValue("id");
-                Gson gson = new Gson();
-                String json = new String(Files.readAllBytes(Paths.get(jsonInputImportsDict)));
-                importsDict = gson.fromJson(json, new TypeToken<HashMap<String, String>>() {}.getType());
-            }
-            catch (IOException exception) {
-                System.err.println("Dictionary file '" + jsonInputImportsDict + "' was not read : " + exception.getMessage());
-                exception.printStackTrace(System.err);
-            }
+            importsDict = loadDictionary(line.getOptionValue("id"));
         }
 
         String exelFile = line.getOptionValue("in");
@@ -60,11 +46,15 @@ public class Application {
         if (line.hasOption("mcolname")) {
             columnHeaderTemplateWithFieldMultiplicity = line.getOptionValue("mcolname");
         }
-        if (line.hasOption("nreg")) {
-            validVariableNamePattern = line.getOptionValue("reg");
+        if (line.hasOption("vreg")) {
+            validVariableNamePattern = line.getOptionValue("vreg");
         }
 
-        ClassCreator classCreator = new ClassCreatorWithPublicFields(outDir, replacementDict, importsDict);
+        ClassCreator classCreator = new ClassCreatorWithPublicFields(
+                outDir,
+                replacementNameDict,
+                replacementTypeDict,
+                importsDict);
 
         XmlToClassesParser parser = new XmlToClassesParser(
                 exelFile,
@@ -74,6 +64,21 @@ public class Application {
                 columnHeaderTemplateWithFieldMultiplicity,
                 validVariableNamePattern);
         parser.parse(nameSheet);
+    }
+
+    static Map<String, String> loadDictionary(String path) {
+        Map<String, String> dict = new HashMap<>();
+        try {
+            Gson gson = new Gson();
+            String json = new String(Files.readAllBytes(Paths.get(path)));
+            dict = gson.fromJson(json, new TypeToken<HashMap<String, String>>() {}.getType());
+        }
+        catch (Exception exception) {
+            System.err.println("Dictionary file '" + path + "' was not read : " + exception.getMessage());
+        }
+        finally {
+            return dict;
+        }
     }
 
     static CommandLine getConsoleArgs(String[] args) {
@@ -103,9 +108,17 @@ public class Application {
                         .build()
         );
         options.addOption(
-                Option.builder("rd")
+                Option.builder("nd")
                         .required(false)
-                        .longOpt("replacement-dict")
+                        .longOpt("name-replacement-dict")
+                        .desc("Dictionary file for name replacement")
+                        .hasArg()
+                        .build()
+        );
+        options.addOption(
+                Option.builder("td")
+                        .required(false)
+                        .longOpt("type-replacement-dict")
                         .desc("Dictionary file for type replacement")
                         .hasArg()
                         .build()
@@ -130,7 +143,7 @@ public class Application {
         options.addOption(
                 Option.builder("tcolname")
                         .required(false)
-                        .longOpt("type-col-pattern")
+                        .longOpt("type-col-name")
                         .desc("Column header template with field type")
                         .hasArg()
                         .build()
@@ -138,15 +151,15 @@ public class Application {
         options.addOption(
                 Option.builder("mcolname")
                         .required(false)
-                        .longOpt("mul-col-pattern")
+                        .longOpt("mul-col-name")
                         .desc("Column header template with field multiplicity")
                         .hasArg()
                         .build()
         );
         options.addOption(
-                Option.builder("nreg")
+                Option.builder("vreg")
                         .required(false)
-                        .longOpt("name-regex")
+                        .longOpt("validation-regex")
                         .desc("Regex pattern for validating variable name ")
                         .hasArg()
                         .build()
@@ -157,7 +170,7 @@ public class Application {
         }
         catch (ParseException exception) {
             HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp( "", options);
+            formatter.printHelp( "ant", options);
             return null;
         }
     }

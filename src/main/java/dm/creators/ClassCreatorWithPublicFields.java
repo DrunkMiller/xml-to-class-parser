@@ -9,16 +9,19 @@ import java.util.*;
 
 public class ClassCreatorWithPublicFields implements ClassCreator {
     private final Path outFilesPath;
+    private final Map<String, String> nameReplacementDict;
     private final Map<String, String> typeReplacementDict;
     private final Map<String, String> importsDict;
 
     public ClassCreatorWithPublicFields(String outFilesPath,
+                                        Map<String, String> nameReplacementDict,
                                         Map<String, String> typeReplacementDict,
                                         Map<String, String> importsDict) {
         this.outFilesPath = Paths.get(outFilesPath);
         if (!Files.exists(this.outFilesPath) || !Files.isDirectory(this.outFilesPath)) {
             throw new IllegalArgumentException("Output directory '\" + inDir + \"' does not exist");
         }
+        this.nameReplacementDict = nameReplacementDict;
         this.typeReplacementDict = typeReplacementDict;
         this.importsDict = importsDict;
     }
@@ -32,7 +35,7 @@ public class ClassCreatorWithPublicFields implements ClassCreator {
         try {
             Files.createFile(filePath).toFile();
             FileWriter writer = new FileWriter(filePath.toFile());
-            Collection<FieldInfo> replacedFields = replaceTypes(fields);
+            Set<FieldInfo> replacedFields = new LinkedHashSet<>(replaceFieldsAccordingDicts(fields));
             writer.write(createImporsStrings(replacedFields));
             writer.write(System.lineSeparator());
             writer.write("public class " + classType +" {");
@@ -56,17 +59,21 @@ public class ClassCreatorWithPublicFields implements ClassCreator {
         }
     }
 
-    private Collection<FieldInfo> replaceTypes(Collection<FieldInfo> fields) {
+    private Collection<FieldInfo> replaceFieldsAccordingDicts(Collection<FieldInfo> fields) {
         List<FieldInfo> fieldsWithNewTypes = new ArrayList<>();
         for (FieldInfo info : fields) {
+            String newName = info.getName();
+            String newType = info.getType();
+            if (nameReplacementDict.containsKey(info.getName())) {
+                newName = nameReplacementDict.get(info.getName());
+            }
             if (typeReplacementDict.containsKey(info.getType())) {
-                fieldsWithNewTypes.add(new FieldInfo(info.getName(),
-                        typeReplacementDict.get(info.getType()),
-                        info.getMultiplicityType()));
+                newType = typeReplacementDict.get(info.getType());
             }
-            else {
-                fieldsWithNewTypes.add(info);
-            }
+            fieldsWithNewTypes.add(new FieldInfo(
+                    newName,
+                    newType,
+                    info.getMultiplicityType()));
         }
         return fieldsWithNewTypes;
     }

@@ -18,6 +18,7 @@ public class XmlToClassesParser {
     private final String columnHeaderTemplateWithFieldMultiplicity;
     private final Pattern validVariableNameRegexPattern;
     private final Set<String> parsedClasses;
+    //private final Map<String, String > replacingEmptyTypeDict;
 
     public XmlToClassesParser(String excelFilePath,
                               ClassCreator classCreator,
@@ -32,6 +33,7 @@ public class XmlToClassesParser {
         this.columnHeaderTemplateWithFieldMultiplicity = columnHeaderTemplateWithFieldMultiplicity;
         this.validVariableNameRegexPattern = Pattern.compile(validVariableNamePattern);
         this.parsedClasses = new HashSet<>();
+        //this.replacingEmptyTypeDict = new HashMap<>();
     }
 
     public void parse(String targetSheet) {
@@ -56,7 +58,7 @@ public class XmlToClassesParser {
                 Cell typeCell = currentRow.getCell(columnNumberOfFieldType);
                 Cell multiplicityCell = currentRow.getCell(columnNumberOfFieldMultiplicity);
                 if (isValidCell(nameCell) || (isValidCell(typeCell) && currentNestingLevel == -1)) {
-                    if (nameCell.getColumnIndex() > currentNestingLevel && currentNestingLevel > 0) {
+                    if (nameCell.getColumnIndex() > currentNestingLevel && currentNestingLevel != -1) {
                         nestingQueue.add(new LinkedList<>());
                     }
                     if (nameCell.getColumnIndex() < currentNestingLevel) {
@@ -83,7 +85,11 @@ public class XmlToClassesParser {
     }
 
     private void createClass(FieldInfo classInfo, List<FieldInfo> fields) {
-        String className =  classInfo.getType();
+        String className = classInfo.getType();
+        if (className.trim().isEmpty() && !classInfo.getName().isEmpty()) {
+            className += Character.toUpperCase(classInfo.getName().charAt(0));
+            className += classInfo.getName().substring(1);
+        }
         if (parsedClasses.contains(className)) {
             return;
         }
@@ -147,10 +153,10 @@ public class XmlToClassesParser {
         String fieldName = parseNameCell(name);
         String fieldType = parseTypeCell(type);
         MultiplicityType multiplicityType = parseMultiplicityCell(multiplicity);
-        if (fieldType.trim().isEmpty() && !fieldName.isEmpty()) {
-            fieldType += Character.toUpperCase(fieldName.charAt(0));
-            fieldType += fieldName.substring(1);
-        }
+//        if (fieldType.trim().isEmpty() && !fieldName.isEmpty()) {
+//            fieldType += Character.toUpperCase(fieldName.charAt(0));
+//            fieldType += fieldName.substring(1);
+//        }
         return new FieldInfo(fieldName, fieldType, multiplicityType);
     }
     
@@ -180,7 +186,7 @@ public class XmlToClassesParser {
             else {
                 typeValue = typeCell.getStringCellValue();
             }
-            return replaceRussianSymbolC(typeValue);
+            return replaceRussianSymbolC(typeValue).trim();
         }
     }
 
