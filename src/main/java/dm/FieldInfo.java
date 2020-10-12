@@ -1,12 +1,16 @@
 package dm;
 
+import dm.creators.MultiplicityType;
+
 public class FieldInfo {
     private final String name;
     private final String type;
+    private final MultiplicityType multiplicityType;
 
-    public FieldInfo(String name, String type) {
+    public FieldInfo(String name, String type, MultiplicityType multiplicityType) {
         this.name = name.trim();
         this.type = type.trim();
+        this.multiplicityType = multiplicityType;
     }
 
     public String getName() {
@@ -14,10 +18,11 @@ public class FieldInfo {
     }
 
     public String getType() {
-        if (type.trim().isEmpty() && Character.isUpperCase(name.charAt(0))) {
-            return name;
-        }
         return type;
+    }
+
+    public MultiplicityType getMultiplicityType() {
+        return multiplicityType;
     }
 
     @Override
